@@ -1,0 +1,137 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'user/signup.css' %}">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+
+    <title>signup</title>
+    <style>
+
+    
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+        
+    </style>
+
+
+
+
+
+</head>
+<body>
+    <section class="form my-4 mx-5 ">
+
+        <div class="container">
+
+             <div class="#">
+                <!-- <div class="col-lg-5">
+
+                    <img src="#" class="img-fluid" alt="">
+
+                </div> --> 
+
+                <div class="col-lg-7 px-5 pt-5 ">
+                    <h1 class="font-weight-bold py-4 px-4 text-success">Plantorium</h1>
+                    <!-- <h4 class="px-3 px-4">Sign into your account</h4> -->
+                    <form action="" method="post" class="d-flex flex-column gap-4" >
+                        {% csrf_token %}
+                        <div class="form-row">
+                            <div class="col-lg-7">
+                                <input type="text" placeholder="Enter your Username" name="username" class="form-control">
+                            </div>
+ 
+                        </div>
+
+                        <div class="form-row">
+                            <div class="col-lg-7">
+                                <input type="number" placeholder="Enter your Phone number" name="number" class="form-control ">
+                            
+                            </div>
+ 
+                        </div>
+
+                        <div class="form-row">
+                            <div class="col-lg-7">
+                                <input type="email" placeholder="Enter your email-id" name="email" class="form-control">
+                            </div>
+ 
+                        </div>
+
+
+                        <div class="form-row ">
+                            <div class="col-lg-7">
+                                <input type="Password" placeholder="Enter your Password" name="password1" class="form-control">
+                            </div>
+ 
+                        </div>
+
+                        <div class="form-row" >
+                            <div class="col-lg-7">
+                                <input type="Password" placeholder="Confirm your Password" name="password2" class="form-control">
+
+                            {% if messages %}
+                                <ul class="messages text-danger">
+                                    {% for message in messages %}
+                                        <li {% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+
+                           
+
+ 
+                        </div>
+
+
+                           
+ 
+                        </div>
+                       
+
+
+
+                        <div class="form-row">
+
+                            <div class="col-lg-7">
+                                <button type="submit" class="btn btn-primary btn-lg btn-block mt-4 mb-4">Signup</button>
+                            
+                              
+                               <!-- <a class="px-2" href="#">Forgot password</a> -->
+                               <p class="">Dont have an account? <a href="{% url 'login' %}">Login</a></p>
+                       
+                            </div>
+                           
+
+
+                
+ 
+                        </div>
+                        
+                    </form>
+
+                </div>
+                
+
+            </div>
+
+        </div>
+
+
+    </section>
+    
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
+</body>
+</html> 
+

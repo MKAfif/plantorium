@@ -1,0 +1,50 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="{% static 'user/otp.css' %}">
+   
+        
+        
+     
+        <title>OTP Verification</title>
+    </head>
+    <body>
+        
+    
+        <form method="post">
+            <div style="color: rgb(23, 77, 4);">
+
+            {% if messages %}
+                  <div id="messages-container">
+                  <div class="alert alert-success" role="alert">
+                    
+                    <ul class="messages">
+                        {% for message in messages %}
+                        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                    <script>
+                      setTimeout(function() {
+                        var container = document.getElementById('messages-container');
+                        container.parentNode.removeChild(container);
+                          
+                      }, 2000);
+                    </script>   
+                    
+                  </div>
+                  </div>
+            {% endif %}
+            </div>
+            {% csrf_token %}
+            
+            <input placeholder="Enter 6 digit verification code" type="text" id="otp" name="otp" pattern="[0-9]{6}" title="Please enter a 6-digit code" required>
+    
+            <button type="submit">Verify OTP</button>
+        </form>
+      
+    </body>
+    </html>
