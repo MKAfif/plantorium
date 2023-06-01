@@ -9,6 +9,9 @@ class Cart(models.Model):
     quantity       =     models.IntegerField(default=0)
     image          =     models.ImageField(upload_to='products',null=True, blank=True )
 
+    @property
+    def sub_total(self):
+        return self.product.price * self.quantity
 
     def __str__(self):
           return f"Cart: {self.user.username} - {self.product} - Quantity: {self.quantity}"
@@ -74,3 +77,15 @@ class Order(models.Model):
     def __str__(self):
         return f"Order #{self.pk} - {self.product}"
 
+
+class Coupon(models.Model):
+    coupon_code    =  models.CharField(max_length=100)
+    expired        =  models.BooleanField(default=False)
+    discount_price  =  models.PositiveIntegerField(default=100)
+    minimum_amount =  models.PositiveIntegerField(default=500)
+    expiry_date    =  models.DateField(null=True,blank=True)
+
+    def __str__(self):
+        return self.coupon_code
+
+     

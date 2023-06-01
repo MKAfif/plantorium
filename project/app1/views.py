@@ -185,7 +185,8 @@ def dashboard(request):
         return render(request,'dashboard.html')
     else:
         return redirect('home')
-    
+
+@never_cache   
 def admin_logout(request):
     if 'admin' in request.session:
         request.session.flush()
@@ -198,7 +199,7 @@ def customers(request):
     if 'admin' in request.session:    
         customer_list =  Customer.objects.filter(is_staff=False).order_by('id')
 
-        paginator = Paginator(customer_list,2)  
+        paginator = Paginator(customer_list,10)  
 
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
@@ -272,20 +273,30 @@ def userproductpage(request):
     if request.method == 'POST':
         email = request.POST.get('email')
         if email:
-            request.session['email']   =  email
-            request.session.modified   =  True
+            request.session['email'] = email
+            request.session.modified = True
             return redirect('userproduct')
 
     if 'email' in request.session:
-        email    =  request.session['email']
-        products =  Product.objects.all()
-        context  =  {
-            'products' :  products,
+        email = request.session['email']
+       
+        results = Product.objects.all()
+        print (results)
+
+        paginator = Paginator(results, 10) 
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        context = {
+            'page_obj' :  page_obj,
             'email'    :  email,
+            
         }
         return render(request, 'userproduct.html', context)
     else:
         return redirect('login')
+
+
     
 
 
@@ -297,7 +308,7 @@ def category(request):
         categories = Category.objects.all().order_by('id')
         
         
-        paginator = Paginator(categories, per_page=3)  # Change the per_page value as desired
+        paginator = Paginator(categories, per_page=3)  
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
         
@@ -366,10 +377,6 @@ def update(request, id):
         }
     return render(request, 'products.html', context)
 
-
-    
-
-    
 
 
 def delete_product(request, product_id):

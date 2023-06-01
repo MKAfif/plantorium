@@ -264,9 +264,11 @@ select {
 button,
 [type="button"],
 [type="reset"],
-[type="submit"] {
-  -webkit-appearance: button;
+[type="submit"] 
+{
+-webkit-appearance: button;
 }
+
 
 button:not(:disabled),
 [type="button"]:not(:disabled),
@@ -3485,6 +3487,7 @@ input[type="button"].btn-block {
   min-height: 1.5rem;
   padding-left: 1.5rem;
   color-adjust: exact;
+
 }
 
 .custom-control-inline {

@@ -6,7 +6,7 @@ from .manager import UserManager
 
 
 class Customer(AbstractUser):
-    username           =   models.CharField(unique=True,null=False,blank=True)
+    username           =   models.CharField(unique=True,null=True,blank=True)
     email              =   models.EmailField(unique=True)
     number             =   models.CharField(max_length=10)
     is_verified        =   models.BooleanField(default=False)

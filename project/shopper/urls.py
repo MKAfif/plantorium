@@ -27,7 +27,20 @@ path('cancel-order/<int:order_id>/', views.cancel_order, name='cancel_order'),
 path('update-cart/<int:product_id>/', views.update_cart, name='update_cart'),
 path('forgot-password/', views.forgot_password, name='forgot_password'),
 path('reset-password/', views.reset_password, name='reset_password'),
+path('search/',views.search,name='search'),
+path('changepassword/',views.changepassword,name='changepassword'),
+path('shippingaddress/', views.shippingaddress, name='shippingaddress'),
+path('customerorder/',views.customer_order,name = 'customer_order'),
 
+path('proceed-to-pay',views.proceedtopay,name='proceedtopay'),
+
+path('razorpay/<int:address_id>/',views.razorpay,name='razorpay'),
+
+path('coupon/',views.coupon,name = 'coupon'),
+
+path('addcoupon/',views.addcoupon,name='addcoupon'),
+
+path('apply_coupon/', views.apply_coupon, name='apply_coupon'),
 
 
 

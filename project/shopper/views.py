@@ -1,6 +1,6 @@
 
 from django.shortcuts import render,redirect,get_object_or_404,HttpResponse
-from .models import Cart,Product,Customer,Order,Address,Wishlist
+from .models import Cart,Product,Customer,Order,Address,Wishlist,Coupon
 from django.db.models import F,Sum
 from django.http import Http404
 from django.views.decorators.cache import cache_control,never_cache
@@ -13,26 +13,28 @@ from django.http import Http404,JsonResponse
 @never_cache
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
 def cart(request):
+    if 'discount' in request.session:
+        del request.session['discount']
+
     user = request.user
     cart_items = Cart.objects.filter(user=user)
     
     cart_items = cart_items.annotate(item_total=F('quantity') * F('product__price'))
     
-    
     subtotal   = cart_items.aggregate(subtotal=Sum('item_total'))['subtotal']
-
-   
+    
     for cart_item in cart_items:
         cart_item.total_price = cart_item.item_total
         cart_item.save()
     shipping_cost = 10 
     
     total = subtotal + shipping_cost if subtotal else 0
-    
+    coupons = Coupon.objects.all()
     context = {
         'cart_items': cart_items,
         'subtotal'  : subtotal,
         'total'     : total,
+        'coupons'   : coupons
     }
     return render(request, 'cart.html', context)
 
@@ -78,19 +80,27 @@ def remove_from_cart(request, cart_item_id):
 def checkout(request):
     user = request.user
     cart_items = Cart.objects.filter(user=user)
-    
     cart_items = cart_items.annotate(item_total=F('quantity') * F('product__price'))
-    
     subtotal = cart_items.aggregate(subtotal=Sum('item_total'))['subtotal']
-
     shipping_cost = 10 
+    discount = request.session.get('discount', 0)
+    if discount:
+        subtotal -= discount
+        total =  subtotal + shipping_cost if subtotal else 0
     
-    total = subtotal + shipping_cost if subtotal else 0
-    
+    else:
+        total =  subtotal + shipping_cost if subtotal else 0
+
+
+    addresses = Address.objects.filter(user=user)
+   
     context = {
-        'cart_items': cart_items,
-        'subtotal': subtotal,
-        'total': total,
+        'cart_items' :  cart_items,
+        'subtotal'   :  subtotal,
+        'total'      :  total,
+        'addresses'  :  addresses,
+       
+        
     }
     return render(request, 'checkout.html', context)
 
@@ -121,18 +131,20 @@ def edit_profile(request):
         
         if password:
             customer.set_password(password)
+
         
         customer.save()
-        return redirect('home')
-    orders = Order.objects.filter(user=request.user.id).order_by('id')
-
+        return redirect('login')
+   
+    addresses = Address.objects.filter(user=request.user)
     context = {
-        'customer': customer,
-        'orders':orders
+        'customer'  : customer,
+        'addresses' : addresses,
+      
     
     }
 
-    return render(request, 'profile.html', context)
+    return render(request, 'testing.html', context)
 
 @login_required
 def placeorder(request):
@@ -148,42 +160,19 @@ def placeorder(request):
     total = subtotal + shipping_cost if subtotal else 0
     
     if request.method == 'POST':
-        first_name    =    request.POST.get('firstname')
-        last_name     =    request.POST.get('lastname')
-        email         =    request.POST.get('email')
-        number        =    request.POST.get('number')
-        address1      =    request.POST.get('address1')
-        address2      =    request.POST.get('address2')
-        country       =    request.POST.get('country')
-        state         =    request.POST.get('state')
-        city          =    request.POST.get('city')
-        zip_code      =    request.POST.get('zip')
         payment       =    request.POST.get('payment')
+        select        =    request.POST.get('addressId')
+       
        
 
-        if not email or not first_name or not last_name or not number or not address1 or not address2 or not country or not state or not city or not zip or not payment :
-            messages.error(request, 'Please input all the details!!!')
+        if not payment or not select:
+            messages.error(request, 'Please fill all the fields!!!')
             return redirect('checkout')
-        
+       
         user = request.user
         cart_items = Cart.objects.filter(user=user)
+        address = Address.objects.get(id=request.POST.get('addressId'))
         
-        
-        
-        address = Address.objects.create(
-            user        =  user,
-            first_name   =  first_name,
-            last_name    =  last_name,
-            email       =  email,
-            number      =  number,
-            address1    =  address1,
-            address2    =  address2,
-            country     =  country,
-            state       =  state,
-            city        =  city,
-            zip_code    =  zip_code
-        )
-
         for cart_item in cart_items:
             order = Order.objects.create(
 
@@ -195,10 +184,11 @@ def placeorder(request):
                 quantity      =     cart_item.quantity,
                 image         =     cart_item.product.image  
             )
-            order.save()
-        address.save()
+
         cart_items.delete()
         return redirect('success')
+
+
 
 def success(request):
     return render(request,'placeorder.html')
@@ -229,7 +219,7 @@ def order(request):
         orders = Order.objects.all().order_by('id')
         
        
-        paginator = Paginator(orders, per_page=1) 
+        paginator = Paginator(orders, per_page=10) 
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
         
@@ -305,7 +295,7 @@ def cancel_order(request,order_id):
         except Order.DoesNotExist:
             pass  
 
-    return redirect('edit_profile')
+    return redirect('customer_order')
 
 def forgot_password(request):
     pass
@@ -314,6 +304,243 @@ def reset_password(request):
     pass
     
 
+def search(request):
+    query = request.GET.get('q')
+    print(query)
+    if query:
+        results = Product.objects.filter(product_name__icontains = query)
+       
+    else:
+        results = []
+       
 
+    paginator = Paginator(results, 10) 
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj' :  page_obj,
+        'query'    :  query,
+        
+    }
+    
+    return render(request,'userproduct.html',context)
+
+
+    
+def changepassword(request):
+    if request.method == 'POST':
+        old_password = request.POST.get('old')
+        new_password = request.POST.get('new_password1')
+        confirm_password = request.POST.get('new_password2')
+
+        customer = Customer.objects.get(username=request.user.username)
+
+        if customer.check_password(old_password):
+            if new_password == confirm_password:
+                customer.set_password(new_password)
+                customer.save()
+                messages.success(request, 'Password changed successfully.')
+                return redirect('home')
+            else:
+                messages.error(request, 'New password and confirm password do not match.')
+                return redirect ('edit_profile')
+        else:
+            messages.error(request, 'Old password is incorrect.')
+            return redirect('edit_profile')
+
+    return render(request, 'testing.html')
+
+
+def shippingaddress(request):
+
+    if request.method == 'POST':
+
+        first_name    =    request.POST.get('firstname')
+        last_name     =    request.POST.get('lastname')
+        email         =    request.POST.get('email')
+        number        =    request.POST.get('number')
+        address1      =    request.POST.get('address1')
+        address2      =    request.POST.get('address2')
+        country       =    request.POST.get('country')
+        state         =    request.POST.get('state')
+        city          =    request.POST.get('city')
+        zip_code      =    request.POST.get('zip')
+       
+       
+
+        if not email or not first_name or not last_name or not number or not address1 or not address2 or not country or not state or not city or not zip :
+            messages.error(request, 'Please input all the details!!!')
+            return redirect('edit_profile')
+        
+        user = request.user
+
+        address = Address.objects.create(
+            user         =    user,
+            first_name   =    first_name,
+            last_name    =    last_name,
+            email        =    email,
+            number       =    number,
+            address1     =    address1,
+            address2     =    address2,
+            country      =    country,
+            state        =    state,
+            city         =    city,
+            zip_code     =    zip_code
+        )
+        address.save()
+        return redirect('edit_profile')
+        
+    else:
+        return render(request, 'testing.html')
+
+
+def customer_order(request):
+    user = request.user 
+    orders = Order.objects.filter(user = user)
+    context ={
+        'orders':orders
+    }
+    return render(request,'customer_order.html',context)
+
+            
+            
+
+def proceedtopay(request):
+    cart = Cart.objects.filter(user=request.user)
+    total = 0
+    shipping = 10
+    for item in cart:
+        total = total + item.product.price * item.quantity + shipping
+        discount = request.session.get('discount', 0)
+    
+    if discount:
+        total -= discount
+
+    return JsonResponse({
+        'total' : total
+
+    })
+
+
+def razorpay(request,address_id):
+    user = request.user
+    cart_items = Cart.objects.filter(user=user)
+    
+    cart_items = cart_items.annotate(item_total=F('quantity') * F('product__price'))
+    
+    subtotal = cart_items.aggregate(subtotal=Sum('item_total'))['subtotal']
+
+    shipping_cost = 10 
+    
+    total = subtotal + shipping_cost if subtotal else 0
+    discount = request.session.get('discount', 0)
+    
+    if discount:
+        total -= discount
+   
+   
+
+    payment  =  'razorpay'
+    user     = request.user
+    cart_items = Cart.objects.filter(user=user)
+    address = Address.objects.get(id=address_id)
+
+    
+    for cart_item in cart_items:
+        order = Order(
+            user          =     user,
+            address       =     address,
+            product       =     cart_item.product,
+            amount        =     total,
+            payment_type  =     payment,
+            quantity      =     cart_item.quantity,
+            image         =     cart_item.product.image  
+        )
+        order.save()
+        
+    cart_items.delete()
+    return redirect('success')
+
+
+@never_cache
+@cache_control(no_cache=True,must_revalidate=True,no_store=True)
+def coupon(request):
+    coupons = Coupon.objects.all().order_by('id')
+    context = {'coupons': coupons}
+    return render(request, 'coupon.html', context)
+
+
+def addcoupon(request):
+    if request.method == 'POST':
+        coupon_code    = request.POST.get('Couponcode')
+        discount_price  = request.POST.get('dprice')
+        minimum_amount = request.POST.get('amount')
+        
+        coupon = Coupon(coupon_code=coupon_code, discount_price=discount_price, minimum_amount=minimum_amount)
+        coupon.save()
+
+        return redirect('coupon')
+    
+def apply_coupon(request):
+    if request.method == 'POST':
+        coupon_code = request.POST.get('coupon_code')
+
+        try:
+            coupon = Coupon.objects.get(coupon_code=coupon_code)
+        except Coupon.DoesNotExist:
+            messages.error(request, 'Invalid coupon code')
+            return redirect('checkout')
+
+        user = request.user
+        cart_items = Cart.objects.filter(user=user)
+        cart_items = cart_items.annotate(item_total=F('quantity') * F('product__price'))
+        subtotal = cart_items.aggregate(subtotal=Sum('item_total'))['subtotal']
+       
+
+        if subtotal is None:
+            subtotal = 0
+
+        if subtotal >= coupon.minimum_amount:
+            subtotal -= coupon.discount_price
+            messages.success(request, 'Coupon applied successfully')
+            request.session['discount'] = coupon.discount_price
+        else:
+            messages.error(request, 'Coupon not availabe for this price')
+
+        shipping_cost = 10
+        total = subtotal + shipping_cost
+
+        request.session['total'] = total
+
+        context = {
+            'cart_items': cart_items,
+            'subtotal': subtotal,
+            'total': total,
+        }
+        return render(request, 'cart.html', context)
+
+    return redirect('cart')
+
+
+def sales_report(request):
+    orders = Order.objects.all()
+    order_details = []
+    
+    for order in orders:
+        order_details.append({
+            'product_name': order.product.product_name,
+            'quantity': order.quantity
+        })
+
+    return render(request, 'dashboard.html', {'order_details': order_details})
+    
+
+
+
+
+    
+
+    
 
 

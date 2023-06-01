@@ -25,6 +25,10 @@
 
     <!-- Customized Bootstrap Stylesheet -->
     <link href="{% static 'home/css/style.css' %}" rel="stylesheet">
+
+    <link href="{% static 'home/css/product.css' %}" rel="stylesheet">
+    
+    
 </head>
 
 <body>
@@ -67,21 +71,29 @@
                 </a>
             </div>
             <div class="col-lg-6 col-6 text-left">
-                <form action="">
+                <form method ="get" action="{% url 'search' %}">
                     <div class="input-group">
-                        <input type="text" class="form-control" placeholder="Search for products">
+                        <input type="text" class="form-control" name="q" placeholder="Search for products">
                         <div class="input-group-append">
-                            <span class="input-group-text bg-transparent text-primary">
+                            <button type="submit" class="btn btn-primary">
                                 <i class="fa fa-search"></i>
-                            </span>
+                            </button>
                         </div>
                     </div>
                 </form>
             </div>
             <div class="col-lg-3 col-6 text-right">
-                <a href="{% url 'edit_profile' %}" class="btn border">
-                    <i class="fas fa-user-circle fa-lg text-primary"></i>
-                </a>
+                <div class="dropdown profile1">
+                    <a href="{% url 'edit_profile' %}" class="btn border dropdown-toggle" id="profileDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      <i class="fas fa-user-circle fa-lg text-primary"></i>
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="profileDropdown">
+                      <!-- Dropdown menu items -->
+                      <a class="dropdown-item" href="{% url 'edit_profile' %}">Profile</a>
+                      <a class="dropdown-item" href="{% url 'customer_order' %}">Orders</a>
+                    </div>
+                </div>
+                
                 <a href="{% url 'wishlist' %}" class="btn border">
                     <i class="fas fa-heart text-primary"></i>
                     <!-- <span class="badge">0</span> -->
@@ -165,6 +177,13 @@
             </div>
         </div>
     </div>
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
     <!-- Page Header End -->
 
 
@@ -199,7 +218,7 @@
                                 </div>
                              </td>
                           
-                            <td class="align-middle">₹{{ cart_item.total_price }}</td>
+                            <td class="align-middle">₹{{ cart_item.sub_total }}</td>
 
                         
                             <td class="align-middle">
@@ -216,14 +235,22 @@
                       
                 </table>
             </div>
+          
 
            
            
            
             <div class="col-lg-4">
-                <form class="mb-5" action="">
+               
+                <form method="post" class="mb-5" action="{% url 'apply_coupon' %}">
+                    {% csrf_token %}
                     <div class="input-group">
-                        <input type="text" class="form-control p-4" placeholder="Coupon Code">
+                        <input type="text" class="form-control p-4" placeholder="Coupon Code" list="couponList" name="coupon_code">
+                        <datalist id="couponList">
+                            {% for coupon in coupons %}
+                            <option value="{{ coupon.coupon_code }}">
+                            {% endfor %}
+                        </datalist>
                         <div class="input-group-append">
                             <button class="btn btn-primary">Apply Coupon</button>
                         </div>
@@ -394,6 +421,43 @@
             });
         }
     </script>
+<!-- testing -->
+<script>
+    $(document).ready(function() {
+      $('#apply-coupon-btn').click(function(event) {
+        event.preventDefault();
+        var couponCode = $('#coupon-code-input').val();
+  
+        $.ajax({
+          url: "{% url 'apply_coupon' %}",
+          type: "POST",
+          data: {
+            csrfmiddlewaretoken: "{{ csrf_token }}",
+            coupon_code: couponCode
+          },
+          success: function(response) {
+            if (response.success) {
+              // Update the subtotal and total amounts in the HTML
+              $('#subtotal').text(response.subtotal);
+              $('#total').text(response.total);
+  
+              // Show the success message
+              $('#coupon-message').text('Coupon applied successfully').removeClass('text-danger').addClass('text-success');
+            } else {
+              // Show the error message
+              $('#coupon-message').text(response.message).removeClass('text-success').addClass('text-danger');
+            }
+          },
+          error: function(error) {
+            // Handle the error response
+            console.log(error);
+          }
+        });
+      });
+    });
+  </script>
+  
+
 
 
     <!-- JavaScript Libraries -->

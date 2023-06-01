@@ -25,6 +25,7 @@
 
     <!-- Customized Bootstrap Stylesheet -->
     <link href="{% static 'home/css/style.css' %}" rel="stylesheet">
+    <link href="{% static 'home/css/product.css' %}" rel="stylesheet">
 </head>
 
 <body>
@@ -67,21 +68,29 @@
                 </a>
             </div>
             <div class="col-lg-6 col-6 text-left">
-                <form action="">
+                <form method ="get" action="{% url 'search' %}">
                     <div class="input-group">
-                        <input type="text" class="form-control" placeholder="Search for products">
+                        <input type="text" class="form-control" name="q" placeholder="Search for products">
                         <div class="input-group-append">
-                            <span class="input-group-text bg-transparent text-primary">
+                            <button type="submit" class="btn btn-primary">
                                 <i class="fa fa-search"></i>
-                            </span>
+                            </button>
                         </div>
                     </div>
                 </form>
             </div>
             <div class="col-lg-3 col-6 text-right">
-                <a href="{% url 'edit_profile' %}" class="btn border">
-                    <i class="fas fa-user-circle fa-lg text-primary"></i>
-                </a>
+                <div class="dropdown profile1">
+                    <a href="{% url 'edit_profile' %}" class="btn border dropdown-toggle" id="profileDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      <i class="fas fa-user-circle fa-lg text-primary"></i>
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="profileDropdown">
+                      <!-- Dropdown menu items -->
+                      <a class="dropdown-item" href="{% url 'edit_profile' %}">Profile</a>
+                      <a class="dropdown-item" href="{% url 'customer_order' %}">Orders</a>
+                    </div>
+                </div>
+                
                 <a href="{% url 'wishlist' %}" class="btn border">
                     <i class="fas fa-heart text-primary"></i>
                     <!-- <span class="badge">0</span> -->
