@@ -50,7 +50,7 @@
             <!-- Navbar Start -->
             <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
                 <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
-                    <h2 class="text-primary mb-0"><i class="fa fa-hashtag"></i></h2>
+                    <!-- <h2 class="text-primary mb-0"><i class="fa fa-hashtag"></i></h2> -->
                 </a>
                 <a href="#" class="sidebar-toggler flex-shrink-0">
                     <i class="fa fa-bars"></i>
@@ -83,6 +83,36 @@
         
 
             <!-- chart start -->
+            <div class="mt-4">
+                <canvas id="myChart"></canvas>
+            </div>
+            <div class="mt-5"> <h2>Order Report</h2> </div>
+            <div class="row mb-3">
+                <form action="{% url 'report_pdf_order' %}" method="POST">
+                    {% csrf_token %}
+                    <div class="row mb-3">
+                        <label class="col-sm-2 col-form-label" for="from-date">From:</label>
+                        <div class="col-sm-3">
+                            <input type="date" class="form-control" id="from-date" name="from_date">
+                        </div>
+                    </div> 
+                    <div class="row mb-3">
+                        <label class="col-sm-2 col-form-label" for="to-date">To:</label>
+                        <div class="col-sm-3">
+                            <input type="date" class="form-control" id="to-date" name="to_date">
+                        </div>
+                    </div> 
+                    <button class="btn btn-primary ml-2" type="submit">Generate Report</button>
+                </form>
+                <div class="card-body p-4">
+                    {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-success">{{ message }}</div>
+                    {% endfor %}
+                    {% endif %} 
+                </div>
+            </div>
+            
             <div>
                 <canvas id="myChart"></canvas>
             </div>
@@ -90,28 +120,30 @@
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             
             <script>
-                const ctx = document.getElementById('myChart');
+                const labels = JSON.parse(`{{ labels|safe }}`);
+                const data = JSON.parse(`{{ data|safe }}`);
             
+                const ctx = document.getElementById('myChart');
                 new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    // labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-                    labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-                    datasets: [{
-                    label: '# of Votes',
-                    data: [12, 19, 3, 5, 2, 3],
-                    borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                    y: {
-                        beginAtZero: true
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Order Amounts',
+                            data: data,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
                     }
-                    }
-                }
                 });
             </script>
+            
         
 
          

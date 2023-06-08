@@ -43,6 +43,16 @@ path('addcoupon/',views.addcoupon,name='addcoupon'),
 path('apply_coupon/', views.apply_coupon, name='apply_coupon'),
 
 
+path('searchcategory/',views.searchcategory,name='searchcategory'),
+path('searchproduct/',views.searchproduct,name='searchproduct'),
+
+
+path('edit_address/<int:address_id>/',views.edit_address,name='edit_address'),
+
+path('delete_address/<int:address_id>/delete/', views.delete_address, name='delete_address'),
+
+
+
 
 
 

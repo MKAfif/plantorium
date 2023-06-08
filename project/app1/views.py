@@ -4,25 +4,32 @@ from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import cache_control,never_cache
 from .models import Customer,Product,Category
+from shopper.models import *
 from django.contrib import messages,auth
 import secrets
 import smtplib
 from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.files.base import ContentFile
+import json
 
 
-
-# @login_required(login_url='login')
 @never_cache
 def loginPage(request):
     context = {
         'messages': messages.get_messages(request)
     }
-    if 'email' in request.session:
+    if 'email' and 'otp' in request.session:
+        request.session.flush()
+        return redirect('login')
+    elif 'email' in request.session:
         return redirect('home')
+   
     elif 'admin' in request.session:
         return redirect('admin')
+    
+    
     else:
         if request.method == 'POST':
             email     =  request.POST.get('email')
@@ -141,6 +148,7 @@ def home(request):
                 'categories':categories
             }
         return render(request,'home.html',context)
+   
     else:
         return redirect('login')
 
@@ -158,7 +166,7 @@ def logoutPage(request):
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
 @never_cache
 def admin_login(request):
-    if 'username' in request.session:
+    if 'email' in request.session:
         return redirect('home')
     elif 'admin' in request.session:
         return redirect('dashboard')
@@ -181,10 +189,21 @@ def admin_login(request):
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
 @never_cache
 def dashboard(request):
+    orders = Order.objects.order_by('-id')[:5]
+    labels = []
+    data = []
+    for order in orders:
+        labels.append(str(order.id))
+        data.append(order.amount)
+    context = {
+        'labels': json.dumps(labels),
+        'data': json.dumps(data),
+    }
+
     if 'admin' in request.session:
-        return render(request,'dashboard.html')
+        return render(request,'dashboard.html',context)
     else:
-        return redirect('home')
+        return redirect('admin')
 
 @never_cache   
 def admin_logout(request):
@@ -194,7 +213,8 @@ def admin_logout(request):
     return redirect('admin')
 
 
-
+@never_cache 
+@cache_control(no_cache=True,must_revalidate=True,no_store=True)
 def customers(request):
     if 'admin' in request.session:    
         customer_list =  Customer.objects.filter(is_staff=False).order_by('id')
@@ -236,36 +256,44 @@ def product(request):
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
 @never_cache  
 def add_product(request):
-    if request.method == 'POST':
-        product_name = request.POST.get('product_name')
-        description = request.POST.get('description')
-        category_name = request.POST.get('category')
-        category = get_object_or_404(Category, category_name=category_name)  
-        price = request.POST.get('price')
-        image = request.FILES.get('image')  
+    if 'admin' in request.session:
+        if request.method == 'POST':
+            product_name   =  request.POST.get('product_name')
+            description    =  request.POST.get('description')
+            category_name  =  request.POST.get('category')
+            category       =  get_object_or_404(Category, category_name=category_name) 
+            stock          =  request.POST.get('stock')
+            price          =  request.POST.get('price')
+            image          =  request.FILES.get('image')  
 
-        
-        if not (product_name and description and category_name and price and image):
-            error_message = "Please fill in all the required fields."
             
-            categories = Category.objects.all()
-            context = {'categories': categories, 'error_message': error_message}
-            return render(request, 'add_product.html', context)
+            if not (product_name and description and category_name and price and image and stock):
+                error_message = "Please fill in all the required fields."
+                
+                categories = Category.objects.all()
+                context = {'categories': categories, 'error_message': error_message}
+                return render(request, 'add_product.html', context)
 
-        
-        
-        product = Product()
-        product.product_name = product_name
-        product.description = description
-        product.category = category  
-        product.price = price
-        product.image = image
-        product.save()
-        return redirect('products') 
+            
+            
+            product = Product()
+            product.product_name   =  product_name
+            product.description    =  description
+            product.category       =  category 
+            product.stock          =  stock 
+            product.price          =  price
+            product.image          =  image
+            product.save()
+            return redirect('products') 
 
-    categories = Category.objects.all()
-    context = {'categories': categories}
-    return render(request, 'add_product.html', context)
+        categories = Category.objects.all()
+        context = {'categories': categories}
+        return render(request, 'add_product.html', context)
+    else:
+        return redirect('admin')
+
+
+
 
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
 @never_cache    
@@ -321,11 +349,12 @@ def category(request):
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
 @never_cache          
 def add_category(request):
+    if 'admin' in request.session:
         if request.method  == 'POST':
             category_name  =   request.POST['category_name']
             description    =   request.POST['description']
             image = request.FILES.get('image')
-           
+        
             category = Category.objects.create(
                 category_name   =  category_name,
                 description     =  description,
@@ -335,38 +364,44 @@ def add_category(request):
 
             return redirect('category')  
         return render(request, 'add_category.html') 
+    else:
+        return redirect ('admin')
 
 
 
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
 @never_cache  
 def editproduct(request, product_id):
-    try:
-        product = Product.objects.get(id=product_id)
-    except Product.DoesNotExist:
-       
-        return render(request, 'product_not_found.html')
+    if 'admin' in request.session:
+        try:
+            product = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+        
+            return render(request, 'product_not_found.html')
+        
+        categories = Category.objects.all()
+        context = {
+            'product'    : product,
+            'categories' : categories,
+        }
+
+        return render(request, 'editproduct.html', context)
+    else:
+        return redirect('admin')
     
-    categories = Category.objects.all()
-    context = {
-        'product'    : product,
-        'categories' : categories,
-    }
-
-    return render(request, 'editproduct.html', context)
-
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
 @never_cache  
 def update(request, id):
     product = Product.objects.get(id=id)
     if request.method == 'POST':
-        product.product_name = request.POST.get('product_name')
-        product.description = request.POST.get('description')
-        category_name = request.POST.get('category')
-        category = Category.objects.get(category_name=category_name)
-        product.category = category
-        product.price = request.POST.get('price')
-        image = request.FILES.get('image')
+        product.product_name    =   request.POST.get('product_name')
+        product.description     =   request.POST.get('description')
+        category_name           =   request.POST.get('category')
+        category                =   Category.objects.get(category_name=category_name)
+        product.category        =   category
+        product.stock           =   request.POST.get('stock')
+        product.price           =   request.POST.get('price')
+        image                   =   request.FILES.get('image')
         if image:
             product.image = image
         product.save()
@@ -393,13 +428,16 @@ def delete_product(request, product_id):
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
 @never_cache  
 def editcategory(request, category_id):
-    try:
-        category = Category.objects.get(id=category_id)
-    except Category.DoesNotExist:
-        return render(request, 'category_not_found.html')
+    if 'admin' in request.session:
+        try:
+            category = Category.objects.get(id=category_id)
+        except Category.DoesNotExist:
+            return render(request, 'category_not_found.html')
 
-    context = {'category': category}
-    return render(request, 'edit_category.html', context)
+        context = {'category': category}
+        return render(request, 'edit_category.html', context)
+    else:
+        return redirect ('admin')
 
 
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)

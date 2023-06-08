@@ -14,6 +14,7 @@ class Customer(AbstractUser):
     forgot_password    =   models.CharField(max_length=100,null=True, blank=True)
     last_login_time    =   models.DateTimeField(null = True, blank = True)
     last_logout_time   =   models.DateTimeField(null=True,blank=True)
+    profile_photo      =   models.ImageField(upload_to='products', null=True, blank=True)
 
     objects = UserManager()
     USERNAME_FIELD = 'email'
@@ -39,5 +40,6 @@ class Product(models.Model):
     product_name   =     models.CharField(max_length=100)
     description    =     models.CharField(max_length=200,default='')
     category       =     models.ForeignKey(Category, on_delete=models.CASCADE)
+    stock          =     models.IntegerField(default=0)
     price          =     models.IntegerField(default=0)
     image          =     models.ImageField(upload_to='products')

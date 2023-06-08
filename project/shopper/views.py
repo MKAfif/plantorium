@@ -1,6 +1,7 @@
 
 from django.shortcuts import render,redirect,get_object_or_404,HttpResponse
 from .models import Cart,Product,Customer,Order,Address,Wishlist,Coupon
+from app1.models import Category
 from django.db.models import F,Sum
 from django.http import Http404
 from django.views.decorators.cache import cache_control,never_cache
@@ -9,34 +10,52 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 import json
 from django.http import Http404,JsonResponse
+import secrets
+import smtplib
+from django.contrib.auth import login
+from django.contrib.auth import get_user_model
+
+
 
 @never_cache
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
 def cart(request):
-    if 'discount' in request.session:
-        del request.session['discount']
+    if 'email' in request.session:
+        if 'discount' in request.session:
+            del request.session['discount']
 
-    user = request.user
-    cart_items = Cart.objects.filter(user=user)
+        user = request.user
+        cart_items = Cart.objects.filter(user=user)
+
+        for cart_item in cart_items:
+            if cart_item.quantity > cart_item.product.stock:
+                messages.warning(request, f"{cart_item.product. product_name} is out of stock.")
+                cart_item.quantity = cart_item.product.stock
+                cart_item.save()
+        
+        cart_items = cart_items.annotate(item_total=F('quantity') * F('product__price'))
+        
+        subtotal   = cart_items.aggregate(subtotal=Sum('item_total'))['subtotal']
+        
+        for cart_item in cart_items:
+            cart_item.total_price = cart_item.item_total
+            cart_item.save()
+        shipping_cost = 10 
+        
+        total = subtotal + shipping_cost if subtotal else 0
+        coupons = Coupon.objects.all()
+        context = {
+            'cart_items': cart_items,
+            'subtotal'  : subtotal,
+            'total'     : total,
+            'coupons'   : coupons
+        }
+        
+        
+        return render(request, 'cart.html', context)
     
-    cart_items = cart_items.annotate(item_total=F('quantity') * F('product__price'))
-    
-    subtotal   = cart_items.aggregate(subtotal=Sum('item_total'))['subtotal']
-    
-    for cart_item in cart_items:
-        cart_item.total_price = cart_item.item_total
-        cart_item.save()
-    shipping_cost = 10 
-    
-    total = subtotal + shipping_cost if subtotal else 0
-    coupons = Coupon.objects.all()
-    context = {
-        'cart_items': cart_items,
-        'subtotal'  : subtotal,
-        'total'     : total,
-        'coupons'   : coupons
-    }
-    return render(request, 'cart.html', context)
+    else:
+          return redirect('login')
 
 
 @never_cache
@@ -51,6 +70,8 @@ def add_to_cart(request, product_id):
 
     if not quantity:
         quantity = 1
+
+   
 
     cart, created = Cart.objects.get_or_create(
         product=product,
@@ -78,44 +99,49 @@ def remove_from_cart(request, cart_item_id):
 @never_cache
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
 def checkout(request):
-    user = request.user
-    cart_items = Cart.objects.filter(user=user)
-    cart_items = cart_items.annotate(item_total=F('quantity') * F('product__price'))
-    subtotal = cart_items.aggregate(subtotal=Sum('item_total'))['subtotal']
-    shipping_cost = 10 
-    discount = request.session.get('discount', 0)
-    if discount:
-        subtotal -= discount
-        total =  subtotal + shipping_cost if subtotal else 0
-    
-    else:
-        total =  subtotal + shipping_cost if subtotal else 0
-
-
-    addresses = Address.objects.filter(user=user)
-   
-    context = {
-        'cart_items' :  cart_items,
-        'subtotal'   :  subtotal,
-        'total'      :  total,
-        'addresses'  :  addresses,
-       
+    if 'email' in request.session:
+        user = request.user
+        cart_items = Cart.objects.filter(user=user)
+        cart_items = cart_items.annotate(item_total=F('quantity') * F('product__price'))
+        subtotal = cart_items.aggregate(subtotal=Sum('item_total'))['subtotal']
+        shipping_cost = 10 
+        discount = request.session.get('discount', 0)
+        if discount:
+            total =  subtotal + shipping_cost - discount if subtotal else 0
         
-    }
-    return render(request, 'checkout.html', context)
+        else:
+            total =  subtotal + shipping_cost  if subtotal else 0
+
+
+        addresses = Address.objects.filter(user=user)
+    
+        context = {
+            'cart_items'       :  cart_items,
+            'subtotal'         :  subtotal,
+            'total'            :  total,
+            'addresses'        :  addresses,
+            'discount_amount'  :  discount,
+        
+            
+        }
+        return render(request, 'checkout.html', context)
+    else:
+        return redirect ('login')
 
     
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
 @never_cache
 def productdetails(request ,product_id=None ):
-    context ={}
-    try:
-        context['product'] = Product.objects.get(id=product_id)
-    except Product.DoesNotExist:
-        raise Http404("Product doesnot exst")
-  
-    return render(request, 'detail.html',context)
+    if 'email' in request.session:
+        context ={}
+        try:
+            context['product'] = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            raise Http404("Product doesnot exst")
     
+        return render(request, 'detail.html',context)
+    else:
+        return redirect('login')    
 
 def edit_profile(request):
     try:
@@ -128,18 +154,27 @@ def edit_profile(request):
         customer.email      =   request.POST.get('email')
         customer.number     =   request.POST.get('number')
         password            =   request.POST.get('password1')
-        
-        if password:
-            customer.set_password(password)
+        profile_photo       =   request.FILES.get('image')
+        address_id          =   request.POST.get('id')      
 
-        
+        if profile_photo:
+            customer.profile_photo.save(profile_photo.name, profile_photo, save=True)
+
+        if password:
+            customer.set_password(password)    
         customer.save()
-        return redirect('login')
+        messages.success(request,'Updated successfully')
+        return redirect('edit_profile')
+    
+        
    
-    addresses = Address.objects.filter(user=request.user)
+    addresses        =  Address.objects.filter(user=request.user).order_by('id')
+    
+
     context = {
-        'customer'  : customer,
-        'addresses' : addresses,
+        'customer'      :  customer,
+        'addresses'     :  addresses,
+      
       
     
     }
@@ -174,6 +209,10 @@ def placeorder(request):
         address = Address.objects.get(id=request.POST.get('addressId'))
         
         for cart_item in cart_items:
+            product = cart_item.product
+            product.stock -= cart_item.quantity
+            product.save()
+
             order = Order.objects.create(
 
                 user          =     user,
@@ -213,7 +252,9 @@ def update_cart(request, product_id):
     return JsonResponse({'message': 'Cart item updated.'}, status=200)
 
 
-    
+ 
+@cache_control(no_cache=True,must_revalidate=True,no_store=True)
+@never_cache     
 def order(request):
     if 'admin' in request.session:
         orders = Order.objects.all().order_by('id')
@@ -244,7 +285,10 @@ def updateorder(request):
 
       
         order.status = status
-        order.save()
+        order.save()   
+        messages.success(request, 'Order status updated successfully.')
+
+        
 
         return redirect('order') 
 
@@ -252,14 +296,18 @@ def updateorder(request):
 
 
 def wishlist(request):
-    user = request.user
-    wishlist_items = Wishlist.objects.filter(user=user)
+    if 'email' in request.session:
+        user = request.user
+        wishlist_items = Wishlist.objects.filter(user=user)
 
-    context = {
-        'wishlist_items': wishlist_items
-    }
+        context = {
+            'wishlist_items': wishlist_items
+        }
 
-    return render(request, 'wishlist.html', context)
+        return render(request, 'wishlist.html', context)
+    else:
+         return redirect('login')
+
 
 
 def add_to_wishlist(request, product_id):
@@ -298,33 +346,97 @@ def cancel_order(request,order_id):
     return redirect('customer_order')
 
 def forgot_password(request):
-    pass
+    if request.method == 'POST':
+        email = request.POST.get('email')
+
+        try:
+            customer = Customer.objects.get(email=email)
+           
+            if customer.email == email:
+            
+                message = generate_otp()
+                sender_email = "plantorium1@gmail.com"
+                receiver_mail = email
+                password = "lhfkxofxdfyhflkq"
+
+                try:
+                    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+                        server.starttls()
+                        server.login(sender_email, password)
+                        server.sendmail(sender_email, receiver_mail, message)
+
+                except smtplib.SMTPAuthenticationError:
+                    messages.error(request, 'Failed to send OTP email. Please check your email configuration.')
+                    return redirect('signup')
+                
+                request.session['email'] =  email
+                request.session['otp']   =  message
+                messages.success (request, 'OTP is sent to your email')
+                return redirect('reset_password')   
+            
+        except Customer.DoesNotExist:
+            messages.info(request,"Email is not valid")
+            return redirect('login')
+    else:
+        return redirect('login')
+
+def generate_otp(length = 6):
+    return ''.join(secrets.choice("0123456789") for i in range(length)) 
 
 def reset_password(request):
-    pass
-    
+    if request.method == 'POST':
+        entered_otp = request.POST.get('otp')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        stored_otp = request.session.get('otp')
+        if entered_otp == stored_otp:
+            if new_password == confirm_password:
+                email = request.session.get('email')
+                try:
+                    customer = Customer.objects.get(email=email)
+                    customer.set_password(new_password)
+                    customer.save()
+                    del request.session['email'] 
+                    del request.session['otp']
+                    messages.success(request, 'Password reset successful. Please login with your new password.')
+                    return redirect('login')
+                except Customer.DoesNotExist:
+                    messages.error(request, 'Failed to reset password. Please try again later.')
+                    return redirect('login')
+            else:
+                messages.error(request, 'New password and confirm password do not match.')
+                return redirect('reset_password')
+        else:
+            messages.error(request, 'Invalid OTP. Please enter the correct OTP.')
+            return redirect('reset_password')
+    else:
+        return render(request, 'passwordreset.html')
+
 
 def search(request):
-    query = request.GET.get('q')
-    print(query)
-    if query:
-        results = Product.objects.filter(product_name__icontains = query)
-       
-    else:
-        results = []
-       
-
-    paginator = Paginator(results, 10) 
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    context = {
-        'page_obj' :  page_obj,
-        'query'    :  query,
-        
-    }
+    if 'email' in request.session:
+        query = request.GET.get('q')
     
-    return render(request,'userproduct.html',context)
+        if query:
+            results = Product.objects.filter(product_name__icontains = query)
+        
+        else:
+            results = []
+        
+
+        paginator = Paginator(results, 10) 
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        context = {
+            'page_obj' :  page_obj,
+            'query'    :  query,
+            
+        }
+        
+        return render(request,'userproduct.html',context)
+    return redirect('login')
 
 
     
@@ -411,11 +523,15 @@ def proceedtopay(request):
     total = 0
     shipping = 10
     for item in cart:
-        total = total + item.product.price * item.quantity + shipping
+        total = total + item.product.price * item.quantity 
         discount = request.session.get('discount', 0)
-    
+    total=total+shipping 
     if discount:
-        total -= discount
+        total -= discount 
+        print("After applying coupon:", total)
+
+    
+        
 
     return JsonResponse({
         'total' : total
@@ -430,14 +546,15 @@ def razorpay(request,address_id):
     cart_items = cart_items.annotate(item_total=F('quantity') * F('product__price'))
     
     subtotal = cart_items.aggregate(subtotal=Sum('item_total'))['subtotal']
-
+   
     shipping_cost = 10 
     
     total = subtotal + shipping_cost if subtotal else 0
     discount = request.session.get('discount', 0)
     
     if discount:
-        total -= discount
+        total -= discount 
+
    
    
 
@@ -466,9 +583,12 @@ def razorpay(request,address_id):
 @never_cache
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
 def coupon(request):
-    coupons = Coupon.objects.all().order_by('id')
-    context = {'coupons': coupons}
-    return render(request, 'coupon.html', context)
+    if 'admin' in request.session:
+        coupons = Coupon.objects.all().order_by('id')
+        context = {'coupons': coupons}
+        return render(request, 'coupon.html', context)
+    else:
+        return redirect('admin')
 
 
 def addcoupon(request):
@@ -496,51 +616,146 @@ def apply_coupon(request):
         cart_items = Cart.objects.filter(user=user)
         cart_items = cart_items.annotate(item_total=F('quantity') * F('product__price'))
         subtotal = cart_items.aggregate(subtotal=Sum('item_total'))['subtotal']
+
+        coupons = Coupon.objects.all()
+
+       
        
 
         if subtotal is None:
             subtotal = 0
 
         if subtotal >= coupon.minimum_amount:
-            subtotal -= coupon.discount_price
             messages.success(request, 'Coupon applied successfully')
             request.session['discount'] = coupon.discount_price
         else:
             messages.error(request, 'Coupon not availabe for this price')
-
+          
+           
         shipping_cost = 10
-        total = subtotal + shipping_cost
+        total = subtotal - coupon.discount_price + shipping_cost
+        
 
-        request.session['total'] = total
+        for cart_item in cart_items:
+            if cart_item.quantity > cart_item.product.stock:
+                messages.warning(request, f"{cart_item.product.product_name} is out of stock !!!")
+                cart_item.quantity = cart_item.product.stock
+                cart_item.save()
+
 
         context = {
-            'cart_items': cart_items,
-            'subtotal': subtotal,
-            'total': total,
+            'cart_items'      :  cart_items,
+            'subtotal'        :  subtotal,
+            'total'           :  total,
+            'coupons'         :  coupons,
+            'discount_amount' :  coupon.discount_price,
         }
         return render(request, 'cart.html', context)
 
     return redirect('cart')
 
 
-def sales_report(request):
-    orders = Order.objects.all()
-    order_details = []
-    
-    for order in orders:
-        order_details.append({
-            'product_name': order.product.product_name,
-            'quantity': order.quantity
-        })
+ 
+@never_cache
+@cache_control(no_cache=True,must_revalidate=True,no_store=True)   
+def searchcategory(request):
+    if 'admin' in request.session:
+        query = request.GET.get('q')
 
-    return render(request, 'dashboard.html', {'order_details': order_details})
-    
+        if query:
+            results = Category.objects.filter( category_name__icontains = query)
+
+        else:
+            results = []
+
+        paginator = Paginator(results, 10) 
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        context = {
+            'categories' :  page_obj,
+            'query'    :  query,
+            
+        }
+        
+        return render(request,'category.html',context)
+
+    else:
+        return redirect('admin')
+
+
+@never_cache
+@cache_control(no_cache=True,must_revalidate=True,no_store=True)
+def searchproduct(request):
+    if 'admin' in request.session:
+        query = request.GET.get('q')
+
+        if query:
+            results = Product.objects.filter( product_name__icontains = query )
+
+        else:
+            results = []
+
+        paginator = Paginator(results, per_page=3)  
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+            
+        context = {
+            'page_obj': page_obj,
+            'query'    :  query,
+        }
+        return render(request, 'products.html', context)
+    else:
+        return redirect ('admin')
 
 
 
+def edit_address(request, address_id):
+    try:
+        address = Address.objects.get(id=address_id)
+    except Address.DoesNotExist:
+        messages.error(request, 'Address not found')
+        return redirect('edit_profile')
 
-    
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        email = request.POST.get('email')
+        number = request.POST.get('number')
+        address1 = request.POST.get('address1')
+        address2 = request.POST.get('address2')
+        country = request.POST.get('country')
+        city = request.POST.get('city')
+        state = request.POST.get('state')
+        zip_code = request.POST.get('zip_code')
 
-    
+        address.first_name = first_name
+        address.last_name = last_name
+        address.email = email
+        address.number = number
+        address.address1 = address1
+        address.address2 = address2
+        address.country = country
+        address.city = city
+        address.state = state
+        address.zip_code = zip_code
+        address.save()
+        messages.success(request, 'Address updated successfully')
+
+    return redirect('edit_profile')
+
+
+
+def delete_address(request, address_id):
+    try:
+        address = Address.objects.get(id=address_id)
+    except Address.DoesNotExist:
+        return redirect('edit_profile')
+
+    address.delete()
+
+    messages.success(request, 'Address deleted successfully.')
+    return redirect('edit_profile')
+
 
 

@@ -70,5 +70,10 @@ urlpatterns = [
 # app2
     path('', include('shopper.urls')),
 
+#app3(reportapp)
+    path('', include('reportapp.urls')),
+
+
+
 
 ]+ static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)

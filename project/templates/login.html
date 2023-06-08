@@ -84,12 +84,17 @@
                         <div class="form-row">
 
                             <div class="col-lg-7 py-3">
-                                <button type="submit" class="btn btn-primary btn-lg btn-block mt-4 mb-4">Login</button>
+
+                              <button type="submit" class="btn btn-primary btn-lg btn-block mt-4 mb-4">Login</button>
+
+                              <a style="font-weight: bold;" href="">Login as guest</a>
                             
-                              
-                               <a class="px-2" href="#">Forgot password</a>
-                               <p class="py-2">Dont have an account? <a href="{% url 'signup' %}">Register here</a></p>
-                       
+                              <a class="px-2" href="#" data-toggle="modal" data-target="#forgotPasswordModal">Forgot password</a>
+
+                              <p class="py-2">Dont have an account? <a href="{% url 'signup' %}">Register here</a></p>
+
+                             
+                               
                             </div>
                            
 
@@ -110,7 +115,33 @@
 
     </section>
     
-    
+<!-- Modal for forgot password -->
+<div class="modal" id="forgotPasswordModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 style="font-weight: bold;" class="modal-title">Forgot Password</h5>
+          <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button> -->
+        </div>
+        <div class="modal-body">
+          <form method="post" action="{% url 'forgot_password' %}">
+            {% csrf_token %}
+            <div class="form-group">
+              <label for="email">Enter your email:</label>
+              <input name="email" type="email" class="form-control" id="email" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add Bootstrap JS -->
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>

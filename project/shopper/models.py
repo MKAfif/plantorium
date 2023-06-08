@@ -70,7 +70,7 @@ class Order(models.Model):
     status         =   models.CharField(max_length=100, choices=ORDER_STATUS, default='pending' )  
     quantity       =   models.IntegerField(default=0)
     image          =   models.ImageField(upload_to='products', null=True, blank=True)
-    date           =     models.DateField(default=date.today)
+    date           =   models.DateField(default=date.today)
     
     
 
@@ -79,11 +79,11 @@ class Order(models.Model):
 
 
 class Coupon(models.Model):
-    coupon_code    =  models.CharField(max_length=100)
-    expired        =  models.BooleanField(default=False)
+    coupon_code     =  models.CharField(max_length=100)
+    expired         =  models.BooleanField(default=False)
     discount_price  =  models.PositiveIntegerField(default=100)
-    minimum_amount =  models.PositiveIntegerField(default=500)
-    expiry_date    =  models.DateField(null=True,blank=True)
+    minimum_amount  =  models.PositiveIntegerField(default=500)
+    expiry_date     =  models.DateField(null=True,blank=True)
 
     def __str__(self):
         return self.coupon_code
