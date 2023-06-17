@@ -142,6 +142,7 @@
                                     <th scope="col">Category</th>
                                     <th scope="col">Stock</th>
                                     <th scope="col">Price</th>
+                                    <th scope="col">Offer %</th>
                                     <th scope="col">Images</th>
                                     <th scope="col">Actions</th>
                                 </tr>
@@ -155,6 +156,8 @@
                                     <td>{{ product.category.category_name }}</td>
                                     <td>{{ product.stock }}</td>
                                     <td>{{ product.price }}</td>
+                                    <td>{{ product.product_offer }}</td>
+                                    
                                     <td><img src="{{ product.image.url }}" alt="" width="100"></td>
                                     <td>
                                         <a href="{% url 'edit_product' product_id=product.id %}" class="edit" data-toggle="modal">

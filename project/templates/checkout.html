@@ -25,6 +25,26 @@
     <!-- Customized Bootstrap Stylesheet -->
     <link href="{% static 'home/css/style.css' %}" rel="stylesheet">
     <link href="{% static 'home/css/product.css' %}" rel="stylesheet">
+
+    <style>
+   
+        #addressDropdown {
+            width: 200px; 
+            height: 40px;
+            font-size: 14px;
+        }
+    
+       
+        @media (max-width: 767px) {
+            #addressDropdown {
+                font-size: 12px;
+            }
+        }
+        .btn-small {
+            padding: 5px 10px; 
+            font-size: 12px; 
+        }
+    </style>
 </head>
 
 <body>
@@ -199,19 +219,16 @@
                     <form id="order-form" action="{% url 'placeorder' %}" method="post">
                         {% csrf_token %}
                         <label for="addressDropdown">Select Address:</label>
-                        <select  id="addressDropdown" name="addressId">
-                            <option  value="">Select an address</option>
+                        <select id="addressDropdown" name="addressId">
+                            <option value="">Select an address</option>
                             {% for address in addresses %}
-                            <option value="{{ address.id }}">{{ address.first_name}} {{ address.last_name }} ,{{address.email}},{{address.state}}, {{address.city}},{{address.address1}},{{address.zip_code}},{{address.number}}</option>
+                            <option value="{{ address.id }}">{{ address.first_name }} {{ address.last_name }}, {{ address.city }}</option>
                             {% endfor %}
                         </select>
-                        <button type="button" class="btn btn-primary mt-2" data-toggle="modal" data-target="#exampleModalCenters">
+                        <button type="button" class="btn btn-primary btn-small mt-2" data-toggle="modal" data-target="#exampleModalCenters">
                             Add New Address
                         </button>
                        
-                        
-                       
-
                         <div class="card border-secondary mb-5 pt-3">
                             <div class="card-header bg-secondary border-0">
                                 <h4 class="font-weight-semi-bold m-0 ">Payment</h4>
@@ -234,10 +251,6 @@
 
                             </div>
                            
-                            <!-- <div class="card-footer border-secondary bg-transparent">
-                                <button id="place-order-button" class="btn btn-lg btn-block btn-primary font-weight-bold my-3 py-3" type="submit">Place Order</button>
-                                <button id="place-order-button" class="btn btn-lg btn-block btn-primary font-weight-bold my-3 py-3" type="submit">Pay with RAZORPAY</button>
-                            </div> -->
                             <div class="card-footer border-secondary bg-transparent">
                                 <button id="place-order-button" class="btn btn-lg btn-block btn-primary font-weight-bold my-3 py-3" type="submit">Place Order</button>
                                 <button id="rzp-button1" class="btn btn-lg btn-block btn-primary font-weight-bold my-3 py-3 paywithrazorpay" type="submit">Pay with RAZORPAY</button>
@@ -261,7 +274,21 @@
                         {% for cart_item in cart_items %}
                         <div class="d-flex justify-content-between">
                             <p>{{ cart_item.product.product_name }}</p>
-                            <p>₹{{ cart_item.product.price }}</p>
+                            {% if cart_item.product.category.category_offer %}
+
+                                {% with offer_price=cart_item.product.price|add:'-'|add:cart_item.product.category.category_offer %}
+                                    <p>₹{{ cart_item.product.price }} - (₹{{ cart_item.product.category.category_offer }})</p>
+                                {% endwith %}
+
+                            {% elif cart_item.product.product_offer %}
+                                {% with offer_price=cart_item.product.price|add:'-'|add:cart_item.product.category.category_offer %}
+                                <p>₹{{ cart_item.product.price }} - ₹17.5</p>
+                            {% endwith %}
+                                
+
+                            {% else %}
+                                <p>₹{{ cart_item.product.price }}</p>
+                            {% endif %}
                             <p>x {{ cart_item.quantity }}</p>
                         </div>
                         {% endfor %}
@@ -416,6 +443,12 @@
             }
         }
     </script>
+
+
+    
+    
+
+
     <!-- razorpay -->
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script src="{% static 'home/js/checkout.js' %}"></script>

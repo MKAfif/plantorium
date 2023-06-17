@@ -15,6 +15,8 @@ class Customer(AbstractUser):
     last_login_time    =   models.DateTimeField(null = True, blank = True)
     last_logout_time   =   models.DateTimeField(null=True,blank=True)
     profile_photo      =   models.ImageField(upload_to='products', null=True, blank=True)
+    referral_code      =   models.CharField(max_length=100,null=True, unique=True)
+    referral_amount    =   models.IntegerField(default=0)
 
     objects = UserManager()
     USERNAME_FIELD = 'email'
@@ -28,18 +30,20 @@ class Customer(AbstractUser):
 
 
 class Category(models.Model):
-    category_name  =   models.CharField(max_length=100)
-    description    =   models.CharField(max_length=200,default='')
-    image          =   models.ImageField(upload_to='products')
- 
+    category_name               =   models.CharField(max_length=100)
+    description                 =   models.CharField(max_length=1000,default='')
+    image                       =   models.ImageField(upload_to='products')
+    category_offer_description  =   models.CharField(max_length=100, null=True, blank=True)
+    category_offer              =   models.PositiveBigIntegerField(default=0)
     
 
 
 class Product(models.Model):
    
     product_name   =     models.CharField(max_length=100)
-    description    =     models.CharField(max_length=200,default='')
+    description    =     models.CharField(max_length=1000,default='')
     category       =     models.ForeignKey(Category, on_delete=models.CASCADE)
     stock          =     models.IntegerField(default=0)
     price          =     models.IntegerField(default=0)
     image          =     models.ImageField(upload_to='products')
+    product_offer  =     models.PositiveBigIntegerField(default=0,null=True)

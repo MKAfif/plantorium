@@ -1,17 +1,19 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'user/log.css' %}">
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{% static 'user/log.css' %}">
 
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
 
-    <title>Login</title>
-    <!-- <style>
+  <title>Login</title>
+  <!-- <style>
       
     </style> -->
 
@@ -20,103 +22,98 @@
 
 
 </head>
+
 <body>
-    <section class="form my-4 mx-5 ">
+  <section class="form my-4 mx-5 ">
 
-        <div class="container">
+    <div class="container">
 
-             <div class="#">
-                <!-- <div class="col-lg-5">
+      <div class="#">
+        <!-- <div class="col-lg-5">
 
                     <img src="#" class="img-fluid" alt="">
 
-                </div> --> 
+                </div> -->
 
-                <div class="col-lg-7 px-5 pt-5 ">
-                    <h1 class="font-weight-bold py-4 px-4 text-success">Plantorium</h1>
-                    <!-- <h4 class="px-3 px-4">Sign into your account</h4> -->
-                    <form action="" method="post" >
+        <div class="col-lg-7 px-5 pt-5 ">
+          <h1 class="font-weight-bold py-4 px-4 text-success">Plantorium</h1>
+          <!-- <h4 class="px-3 px-4">Sign into your account</h4> -->
+          <form action="" method="post">
+            <div>
+              {% if messages %}
+              <div id="messages-container">
+                <div class="alert alert-success" role="alert"
+                  style="background-color: transparent; border-color: transparent; font-size: 18px;">
 
-                        <div>
+                  <ul class="messages">
+                    {% for message in messages %}
+                    <li{% if message.tags %} class="{{ message.tags }}" {% endif %} style="color: white;">{{ message }}
+                      </li>
+                      {% endfor %}
+                  </ul>
+                  <script>
+                    setTimeout(function () {
+                      var container = document.getElementById('messages-container');
+                      container.parentNode.removeChild(container);
 
-                            {% if messages %}
-                                  <div id="messages-container">
-                                    <div class="alert alert-success" role="alert" style="background-color: transparent; border-color: transparent; font-size: 18px;">
-                                    
-                                    <ul class="messages">
-                                        {% for message in messages %}
-                                        <li{% if message.tags %} class="{{ message.tags }}"{% endif %} style="color: white;">{{ message }}</li>
-                                        {% endfor %}
-                                    </ul>
-                                    <script>
-                                      setTimeout(function() {
-                                        var container = document.getElementById('messages-container');
-                                        container.parentNode.removeChild(container);
-                                          
-                                      }, 2500);
-                                    </script>   
-                                    
-                                  </div>
-                                  </div>
-                            {% endif %}
-                        </div>
-
-
-
-                        {% csrf_token %}
-                        <div class="form-row">
-                            <div class="col-lg-7">
-                                <input type="email" placeholder="Enter your Email-id" name="email" class="form-control my-3 p-4">
-                            </div>
- 
-                        </div>
-
-                        <div class="form-row ">
-                            <div class="col-lg-7">
-                                <input type="Password" placeholder="Enter your Password" name="pass" class="form-control">
-
-                            </div>
-                            
- 
-                        </div>
-                        
-
-                        <div class="form-row">
-
-                            <div class="col-lg-7 py-3">
-
-                              <button type="submit" class="btn btn-primary btn-lg btn-block mt-4 mb-4">Login</button>
-
-                              <a style="font-weight: bold;" href="">Login as guest</a>
-                            
-                              <a class="px-2" href="#" data-toggle="modal" data-target="#forgotPasswordModal">Forgot password</a>
-
-                              <p class="py-2">Dont have an account? <a href="{% url 'signup' %}">Register here</a></p>
-
-                             
-                               
-                            </div>
-                           
-
-
-                
-
-                        </div>
-                        
-                    </form>
+                    }, 2500);
+                  </script>
 
                 </div>
-                
+              </div>
+              {% endif %}
+            </div>
+
+
+
+            {% csrf_token %}
+            <div class="form-row">
+              <div class="col-lg-7">
+                <input type="email" placeholder="Enter your Email-id" name="email" class="form-control my-3 p-4">
+              </div>
 
             </div>
+
+            <div class="form-row ">
+              <div class="col-lg-7">
+                <input type="Password" placeholder="Enter your Password" name="pass" class="form-control">
+
+              </div>
+
+
+            </div>
+
+            <div class="form-row">
+              <div class="col-lg-7 py-3">
+
+                <button type="submit" class="btn btn-primary btn-lg btn-block mt-4 mb-4">Login</button>
+
+                <a class="px-2" href="#" data-toggle="modal" data-target="#forgotPasswordModal">Forgot password</a>
+
+                <p class="py-2">Dont have an account? <a href="{% url 'signup' %}">Register here</a></p>
+
+              </div>
+
+
+
+
+
+            </div>
+
+          </form>
 
         </div>
 
 
-    </section>
-    
-<!-- Modal for forgot password -->
-<div class="modal" id="forgotPasswordModal" tabindex="-1" role="dialog">
+      </div>
+
+    </div>
+
+
+  </section>
+
+  <!-- Modal for forgot password -->
+  <div class="modal" id="forgotPasswordModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
@@ -138,14 +135,16 @@
       </div>
     </div>
   </div>
-  
+
   <!-- Add Bootstrap JS -->
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-  
+
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
+    crossorigin="anonymous"></script>
 </body>
-</html> 
 
+</html>

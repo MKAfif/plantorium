@@ -51,9 +51,7 @@ path('edit_address/<int:address_id>/',views.edit_address,name='edit_address'),
 
 path('delete_address/<int:address_id>/delete/', views.delete_address, name='delete_address'),
 
-
-
-
+path('admin_order_details/<int:order_id>/', views.admin_order_details, name='admin_order_details')
 
 
 ]+ static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)

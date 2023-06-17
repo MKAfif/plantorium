@@ -11,8 +11,10 @@ import smtplib
 from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.files.base import ContentFile
 import json
+from django.db.models import F
+import uuid
+import string,random
 
 
 @never_cache
@@ -23,10 +25,11 @@ def loginPage(request):
     if 'email' and 'otp' in request.session:
         request.session.flush()
         return redirect('login')
-    elif 'email' in request.session:
+    
+    if 'email' in request.session:
         return redirect('home')
-   
-    elif 'admin' in request.session:
+    
+    if 'admin' in request.session:
         return redirect('admin')
     
     
@@ -44,7 +47,8 @@ def loginPage(request):
                messages.error(request,"username or password is not same")
                return render(request, 'login.html') 
         else:
-            return render (request,'login.html',context)
+            return render (request,'login.html',context) 
+        
 
 
 @never_cache
@@ -58,6 +62,7 @@ def signupPage(request):
         username  =    request.POST.get('username')
         pass1     =    request.POST.get('password1')
         pass2     =    request.POST.get('password2')
+        refferal  =    request.POST.get('refferal')
 
         if not email or not username or not pass1 or not pass2:
             messages.error(request, 'Please input all the details.')
@@ -90,9 +95,17 @@ def signupPage(request):
         except smtplib.SMTPAuthenticationError:
             messages.error(request, 'Failed to send OTP email. Please check your email configuration.')
             return redirect('signup')
-
-        user = Customer.objects.create_user(username=username, password=pass1, email=email,number=number)
+        referral_codes = generate_referral_code()
+        user = Customer.objects.create_user(username=username, password=pass1, email=email,number=number,referral_code=referral_codes)
         user.save()
+
+        if refferal:
+            referrer = Customer.objects.get(referral_code = refferal)
+            if referrer:
+                referrer.referral_amount += 100
+                referrer.save()
+
+
         request.session['email'] =  email
         request.session['otp']   =  message
         messages.success (request, 'OTP is sent to your email')
@@ -103,8 +116,15 @@ def signupPage(request):
 def generate_otp(length = 6):
     return ''.join(secrets.choice("0123456789") for i in range(length)) 
 
+def generate_referral_code():
+    letters = string.ascii_letters + string.digits
+    referral_code = ''.join(random.choice(letters) for i in range(10))
+    return referral_code
+
+
 def validate_email(email):
     return '@' in email and '.' in email
+
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
 @never_cache
 def verify_signup(request):
@@ -113,25 +133,39 @@ def verify_signup(request):
     }
     if request.method == "POST":
         
-        user  =  Customer.objects.get(email=request.session['email'])
-        x     =  request.session.get('otp')
-        OTP   =  request.POST['otp']
-    
+        user      =  Customer.objects.get(email=request.session['email'])
+        x         =  request.session.get('otp')
+        OTP       =  request.POST['otp']
+      
         if OTP == x:
             user.is_verified = True
             user.save()
             del request.session['email'] 
             del request.session['otp']
-            
+        
             auth.login(request,user)
             messages.success(request, "Signup successful!")
+            device_id = request.COOKIES.get('device_id')
+            if device_id:
+                wish_list_items = Wishlist.objects.filter(device=device_id)
+                cart_items = Cart.objects.filter(device=device_id)
 
-            return redirect('home')
+                for item in wish_list_items:
+                    item.user = user
+                    item.save()
+
+                for item in cart_items:
+                    item.user = user
+                    item.save()
+            response = redirect('home')
+            response.delete_cookie('device_id')
+            return response
         else:
             user.delete()
             messages.info(request,"invalid otp")
             del request.session['email']
             return redirect('signup')
+        
     return render(request,'verify_otp.html',context)
 
 
@@ -142,16 +176,15 @@ def verify_signup(request):
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
 @never_cache
 def home(request):
-    if 'email' in request.session:
-        categories =  Category.objects.all()
-        context    =  {
-                'categories':categories
-            }
-        return render(request,'home.html',context)
    
-    else:
-        return redirect('login')
-
+    categories =  Category.objects.all()
+    for category in categories:
+        category.product_count = category.product_set.count()
+    context    =  {
+            'categories':categories
+        }
+    return render(request,'home.html',context)
+   
 
 
 
@@ -160,7 +193,7 @@ def logoutPage(request):
     if 'email' in request.session:
         request.session.flush()
     logout(request)
-    return redirect('login')
+    return redirect('home')
 
     
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
@@ -264,8 +297,10 @@ def add_product(request):
             category       =  get_object_or_404(Category, category_name=category_name) 
             stock          =  request.POST.get('stock')
             price          =  request.POST.get('price')
+            offer          =  request.POST.get('offer')
             image          =  request.FILES.get('image')  
 
+            images         =  request.FILES.getlist('mulimage')
             
             if not (product_name and description and category_name and price and image and stock):
                 error_message = "Please fill in all the required fields."
@@ -274,7 +309,7 @@ def add_product(request):
                 context = {'categories': categories, 'error_message': error_message}
                 return render(request, 'add_product.html', context)
 
-            
+
             
             product = Product()
             product.product_name   =  product_name
@@ -282,8 +317,13 @@ def add_product(request):
             product.category       =  category 
             product.stock          =  stock 
             product.price          =  price
+            product.product_offer  =  offer
             product.image          =  image
             product.save()
+
+            for img in images:
+                Images.objects.create(product=product, images=img)
+
             return redirect('products') 
 
         categories = Category.objects.all()
@@ -294,38 +334,60 @@ def add_product(request):
 
 
 
-
 @cache_control(no_cache=True,must_revalidate=True,no_store=True)
 @never_cache    
 def userproductpage(request):
-    if request.method == 'POST':
-        email = request.POST.get('email')
-        if email:
-            request.session['email'] = email
-            request.session.modified = True
-            return redirect('userproduct')
+  
+    results = Product.objects.all().order_by('id')
 
-    if 'email' in request.session:
-        email = request.session['email']
-       
-        results = Product.objects.all()
-        print (results)
-
-        paginator = Paginator(results, 10) 
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-
-        context = {
-            'page_obj' :  page_obj,
-            'email'    :  email,
-            
-        }
-        return render(request, 'userproduct.html', context)
-    else:
-        return redirect('login')
+    total_product_count = Product.objects.count()
+    selected_categories = request.GET.getlist('category')
+    if selected_categories:
+        results = results.filter(category__category_name__in=selected_categories)
+     
 
 
+    sort_option = request.GET.get('sort')
+    if sort_option == 'high':
+        results = results.order_by(F('price').desc())
+    elif sort_option=='all':
+        results = results.order_by('price') 
     
+
+    paginator = Paginator(results, 9)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    for product in page_obj:
+        discounted_price = None
+        if product.category.category_offer:
+            discounted_price = product.price - product.category.category_offer
+        product.discounted_price = discounted_price
+
+        offer_price = None
+        if product.product_offer:
+            offer_price        =  product.price -(product.price * product.product_offer/100)
+        product.offer_price    =  offer_price
+      
+         
+
+
+    context = {
+        'page_obj'             : page_obj,
+        'selected_categories'  : selected_categories,
+        'total_product_count'  : total_product_count,
+    }
+
+    device_id = request.COOKIES.get('device_id')
+    if not device_id:
+        device_id = uuid.uuid4()
+        response = render(request, "userproduct.html", context)
+        response.set_cookie('device_id', device_id)
+        return response
+    return render(request, 'userproduct.html', context)
+   
+
+
 
 
 
@@ -351,14 +413,19 @@ def category(request):
 def add_category(request):
     if 'admin' in request.session:
         if request.method  == 'POST':
-            category_name  =   request.POST['category_name']
-            description    =   request.POST['description']
-            image = request.FILES.get('image')
-        
+            category_name       =   request.POST['category_name']
+            description         =   request.POST['description']
+            image               =   request.FILES.get('image')
+            offer_description   =   request.POST['offer_details']
+            offer_price         =   request.POST['offer_price']
+
+
             category = Category.objects.create(
-                category_name   =  category_name,
-                description     =  description,
-                image           =  image,
+                category_name                =  category_name,
+                description                  =  description,
+                image                        =  image,
+                category_offer_description   =  offer_description,
+                category_offer               =  offer_price
             )
             category.save() 
 
@@ -401,10 +468,19 @@ def update(request, id):
         product.category        =   category
         product.stock           =   request.POST.get('stock')
         product.price           =   request.POST.get('price')
+        product.product_offer   =   request.POST.get('offer')
         image                   =   request.FILES.get('image')
+        images                  =   request.FILES.getlist('mulimage')
+
         if image:
             product.image = image
         product.save()
+
+        for img in images:
+            product_image = Images(product=product)
+            product_image.images = img
+            product_image.save()
+            
         return redirect('products') 
     else:
         context = {
@@ -451,9 +527,11 @@ def update_category(request, id):
     if request.method == 'POST':
         category_name = request.POST.get('category_name')
         if category_name:
-            category.category_name = category_name
-        category.description = request.POST.get('description')
-        image = request.FILES.get('image')
+            category.category_name           =  category_name
+        category.description                 =  request.POST.get('description')
+        image                                =  request.FILES.get('image')
+        category.category_offer_description  =  request.POST.get('offer_details')
+        category.category_offer              =  request.POST.get('offer_price')
         if image:
             category.image = image
         category.save()

@@ -41,7 +41,15 @@
 </head>
 <body>
     <div class="message">
+        {% for order in orders %}
         <h1>Congratulations! Order placed</h1>
+        <h4>order id : {{ order.id }} </h4>
+        <h4>order amount : {{ order.amount }} </h4>
+        <h4>Expected delivery date : 5-7 working days</h4>
+        {% endfor %}
+    </div>
+    <div id="timer" style="position: fixed; top: 0; left: 0; width: 100%; background: #D19C97; color: #fff; padding: 10px; text-align: center;">
+        <h5 style="color: green;">Redirecting to homepage in <span id="countdown">5</span> seconds</h5>
     </div>
     <script>
         setTimeout(function() {
@@ -49,9 +57,32 @@
           message.classList.add('show-message');
           setTimeout(function() {
             window.location.href = "{% url 'home' %}";
-          }, 1000); 
+          }, 10000); 
         }, 1000); 
       </script>
+
+<script>
+   
+    function startCountdown() {
+        var countdownElement = document.getElementById('countdown');
+        var countdown = parseInt(countdownElement.innerText);
+
+      
+        var timer = setInterval(function() {
+            countdown--;
+            countdownElement.innerText = countdown;
+
+         
+            if (countdown === 0) {
+                clearInterval(timer);
+                window.location.href = "/";
+            }
+        }, 1000);
+    }
+
+ 
+    window.onload = startCountdown;
+</script>
 
 </body>
 </html>

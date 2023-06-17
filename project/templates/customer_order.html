@@ -144,10 +144,30 @@
         </thead>
         <tbody>
             {% for order in orders %}
-            <tr {% if order.status == 'cancelled' %}style="text-decoration: line-through; background-color: #ffcccc;"{% endif %}>  
+            <tr {% if order.status == 'cancelled' %}style=" background-color: #ffcccc;"{% endif %}>  
                 <td>{{ order.id }}</td>
-                <td><img src="{{ order.product.image.url }}" alt="" width="60"></td>
-                <td>{{ order.quantity }}</td>
+                <td>
+                    {% if order.orderitem_set.all %}
+                        {% for order_item in order.orderitem_set.all %}
+                            <div class="mb-2">
+                                <img src="{{ order_item.image.url }}" alt="" width="60">
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="mb-0 fw-normal">No products</p>
+                    {% endif %}
+                
+                <td class="border-bottom-0">
+                    {% if order.orderitem_set.all %}
+                        {% for order_item in order.orderitem_set.all %}
+                            <h6 class="fw-semibold mb-1">
+                                {{ order_item.product.product_name }} (x{{ order_item.quantity }})
+                            </h6>
+                        {% endfor %}
+                    {% else %}
+                        <p class="mb-0 fw-normal">No products</p>
+                    {% endif %}
+                </td>
                 <td>{{ order.amount }}</td>
                 <td>{{ order.payment_type }}</td>
                 <td>{{ order.date }}</td>

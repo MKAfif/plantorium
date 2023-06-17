@@ -18,6 +18,12 @@
     .dropdown:hover .dropdown-content {
     display: block;
     }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
 
 
 
@@ -223,7 +229,10 @@
                                         <button style="text-decoration: underline;" type="button" class="btn " data-toggle="modal" data-target="#exampleModalLongs">
                                             Change Password
                                         </button>
-                                    </div>
+                                    </div> 
+                                    <h5 style="font-size: 20px;">Referral Code: {{ customer.referral_code }}</h5>
+                                    <h5 style="font-size: 20px;">Referral Amount: {{ customer.referral_amount }} </h5>
+
                                 </div>
                                 <div class="modal-footer">
                                     <input type="submit" class="btn btn-success" value="Update">

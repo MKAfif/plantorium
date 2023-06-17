@@ -61,8 +61,8 @@ urlpatterns = [
 
 
 #user side
-    path('home/',views.home,name='home'),
-    path('', views.loginPage, name='login'),
+    path('',views.home,name='home'),
+    path('login', views.loginPage, name='login'),
     path('logout/',views.logoutPage,name='logout'),
     path('userproduct/',views.userproductpage,name='userproduct'),
     path('verify_otp/',views.verify_signup,name='verify_signup'),

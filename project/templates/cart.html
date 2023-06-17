@@ -120,12 +120,15 @@
                     <i class="fa fa-angle-down text-dark"></i>
                 </a>
                 <nav class="collapse position-absolute navbar navbar-vertical navbar-light align-items-start p-0 border border-top-0 border-bottom-0 bg-light" id="navbar-vertical" style="width: calc(100% - 30px); z-index: 1;">
-                    <div class="navbar-nav w-100 overflow-hidden" style="height: 410px">         
-                        <a href="" class="nav-item nav-link">Pet-Friendly Plants</a>
-                        <a href="" class="nav-item nav-link">For-Beginers</a>
-                        <a href="" class="nav-item nav-link">Flowering Plants</a>
-                        <a href="" class="nav-item nav-link">Faux & Preserved Plants</a>
-                        <a href="" class="nav-item nav-link">Large Plants & Trees</a>
+                    <div class="navbar-nav w-100 overflow-hidden"> 
+                               
+                        <a href="{% url 'userproduct' %}?category=Pet-Friendly Plants" class="nav-item nav-link">Pet-Friendly Plants</a>
+                        <a href="{% url 'userproduct' %}?category=For-Beginers" class="nav-item nav-link">For-Beginers</a>
+                        <a href="{% url 'userproduct' %}?category=Flowering Plants" class="nav-item nav-link">Flowering Plants</a>
+                        <a href="{% url 'userproduct' %}?category=Faux and Preserved" class="nav-item nav-link">Faux & Preserved Plants</a>
+                        <a href="{% url 'userproduct' %}?category=Large Plants and Trees" class="nav-item nav-link">Large Plants & Trees </a>
+
+
                     </div>
                 </nav>
             </div>
@@ -143,7 +146,7 @@
                             <a href="{% url 'userproduct' %}" class="nav-item nav-link">Shop</a>
                             <a href="detail.html" class="nav-item nav-link">Shop Detail</a>
                             <div class="nav-item dropdown">
-                                <a href="#" class="nav-link dropdown-toggle active" data-toggle="dropdown">Pages</a>
+                                <!-- <a href="#" class="nav-link dropdown-toggle active" data-toggle="dropdown">Pages</a> -->
                                 <div class="dropdown-menu rounded-0 m-0">
                                     <a href="{% url 'cart' %}" class="dropdown-item">Shopping Cart</a>
                                    
@@ -221,7 +224,16 @@
                         {% for cart_item in cart_items %}
                         <tr>
                             <td class="align-middle"><img src="{{ cart_item.product.image.url }}" alt="" style="width: 50px;"> {{ cart_item.product.product_name }}</td>
-                            <td class="align-middle">₹{{ cart_item.product.price }}</td>
+                            <td class="align-middle">
+                                {% if cart_item.product.category.category_offer %}
+                                    ₹{{ cart_item.product.price }} - ₹{{ cart_item.product.category.category_offer }}
+
+                                {% elif cart_item.product.product_offer %}
+                                    ₹{{ cart_item.product.price }} - ₹17.5
+                                {% else %}
+                                    ₹{{ cart_item.product.price }}
+                                {% endif %}
+                            </td>
                             <td>
                                 <div class="input-group mb-3" style="max-width: 120px;">
                                     <div class="input-group-prepend">
@@ -232,18 +244,16 @@
                                         <button onclick="updateQuantity('{{ cart_item.product.id }}', 'increase')" class="btn btn-outline-primary js-btn-plus" type="button">&plus;</button>
                                     </div>
                                 </div>
-                             </td>
-                          
-                            <td class="align-middle">₹{{ cart_item.sub_total }}</td>
-
-                        
+                            </td>
+                
+                            <td class="align-middle">₹{{ cart_item.total_price }}</td>
+                            
                             <td class="align-middle">
                                 <form action="{% url 'remove_from_cart' cart_item.id %}" method="POST">
                                   {% csrf_token %}
                                   <button class="btn btn-sm btn-primary" type="submit"><i class="fa fa-times"></i></button>
                                 </form>
-                              </td>
-                              
+                            </td>                 
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -283,13 +293,17 @@
                         </div>
                         <div class="d-flex justify-content-between mb-3 pt-1">
                             <h6 style="color: green;" class="font-weight-medium">Coupon Discount</h6>
-                                {% if discount_amount %}
-                                    <h6 style="color: green;" class="font-weight-medium">₹{{ discount_amount }}</h6>
-                                {% endif %}
+                            {% if request.session.discount %}
+                                <h6 style="color: green;" class="font-weight-medium">₹{{ request.session.discount }}</h6>
+                            {% endif %}
                         </div>
                         <div class="d-flex justify-content-between">
                             <h6 class="font-weight-medium">Shipping</h6>
+                        {% if cart_items %}
                             <h6 class="font-weight-medium">₹10</h6>
+                        {% else %}
+                            <h6 class="font-weight-medium">₹0</h6>
+                        {% endif %}
                         </div>
                     </div>
                     <div class="card-footer border-secondary bg-transparent">

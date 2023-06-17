@@ -146,6 +146,8 @@
                                     <th scope="col">Name</th>
                                     <th scope="col">Description</th>
                                     <th scope="col">Images</th>
+                                    <th scope="col">Offer details</th>
+                                    <th scope="col">Offer price</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -154,6 +156,8 @@
                                     <td>{{ category.category_name }}</td>
                                     <td>{{ category.description }}</td>
                                     <td><img src="{{ category.image.url }}" alt="" width="100"></td>
+                                    <td>{{ category.category_offer_description }}</td>
+                                    <td>{{ category.category_offer }}</td>
                                     <td>
                                         <a href="{% url 'edit_category' category_id=category.id %}" class="edit" data-toggle="modal"><i class="material-icons" data-toggle="tooltip" title="Edit">&#xE254;</i></a>
                                         <a href="#" class="delete" data-toggle="modal" data-target="#deleteModal{{ category.id }}"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xE872;</i></a>
