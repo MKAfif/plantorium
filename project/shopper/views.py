@@ -153,8 +153,8 @@ def checkout(request):
                 itemprice2 =  (cart_item.product.price - (cart_item.product.price * cart_item.product.product_offer/100)) * cart_item.quantity
                 subtotal=subtotal+itemprice2  
             else: 
-                itemprice=(cart_item.product.price)*(cart_item.quantity)
-                subtotal=subtotal+itemprice
+                itemprice2=(cart_item.product.price)*(cart_item.quantity)
+                subtotal=subtotal+itemprice2
         shipping_cost = 10 
         discount = request.session.get('discount', 0)
         if discount:
@@ -172,7 +172,7 @@ def checkout(request):
             'total'            :  total,
             'addresses'        :  addresses,
             'discount_amount'  :  discount,
-            'itemprice'       :  itemprice2
+            'itemprice'        :  itemprice2
         
             
         }
