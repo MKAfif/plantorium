@@ -45,6 +45,8 @@
         <h1>Congratulations! Order placed</h1>
         <h4>order id : {{ order.id }} </h4>
         <h4>order amount : {{ order.amount }} </h4>
+        <h4>Payment method : {{ order.payment_type }}</h4>
+        <h4>Date Of Purchase : {{ order.date }}</h4>
         <h4>Expected delivery date : 5-7 working days</h4>
         {% endfor %}
     </div>

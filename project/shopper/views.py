@@ -271,9 +271,9 @@ def placeorder(request):
             
         else:
             
-            itemprice=(cart_item.product.price)*(cart_item.quantity)
+            itemprice2=(cart_item.product.price)*(cart_item.quantity)
             
-            subtotal=subtotal+itemprice
+            subtotal=subtotal+itemprice2
     shipping_cost = 10 
     total = subtotal + shipping_cost if subtotal else 0
     
@@ -318,28 +318,13 @@ def placeorder(request):
 def success(request):
     orders = Order.objects.order_by('-id')[:1]
     context = {
-        'orders' : orders
+        'orders'  : orders,
+
     }
     return render(request,'placeorder.html',context)
 
 
 
-# def update_cart(request, product_id):
-#     cart_item = get_object_or_404(Cart, product_id=product_id, user=request.user)
-    
-#     try:
-#         data = json.loads(request.body)
-#         quantity = int(data.get('quantity'))
-#     except (json.JSONDecodeError, ValueError, TypeError):
-#         return JsonResponse({'message': 'Invalid quantity.'}, status=400)
-    
-#     if quantity < 1:
-#         return JsonResponse({'message': 'Quantity must be at least 1.'}, status=400)
-
-#     cart_item.quantity = quantity
-#     cart_item.save()
-
-#     return JsonResponse({'message': 'Cart item updated.'}, status=200)
 
 
 def update_cart(request, product_id):
@@ -411,24 +396,13 @@ def updateorder(request):
     return redirect('admin')
 
 
-# def wishlist(request):
-#     if 'email' in request.session:
-#         user = request.user
-#         wishlist_items = Wishlist.objects.filter(user=user)
 
-#         context = {
-#             'wishlist_items': wishlist_items
-#         }
-
-#         return render(request, 'wishlist.html', context)
-#     else:
-#          return redirect('login')
 
 def wishlist(request):
 
     user = request.user
     if isinstance(user, AnonymousUser):
-        # Handle anonymous user wishlist
+    
         device_id = request.COOKIES.get('device_id')
         if not device_id:
             return JsonResponse({'message': 'Device ID not found.'}, status=400)
@@ -446,19 +420,7 @@ def wishlist(request):
 
 
 
-# def add_to_wishlist(request, product_id):
-#     try:
-#         product = Product.objects.get(id=product_id)
-#     except Product.DoesNotExist:
-#         return redirect('product_not_found')
 
-#     wishlist, created = Wishlist.objects.get_or_create(
-#         product=product,
-#         user=request.user
-#     )
-#     wishlist.save()
-
-#     return redirect('wishlist')
 
 
 def add_to_wishlist(request, product_id):
@@ -482,14 +444,7 @@ def add_to_wishlist(request, product_id):
 
 
 
-# def remove_from_wishlist(request, wishlist_item_id):
-#     try:
-#         wishlist_item = Wishlist.objects.get(id=wishlist_item_id, user=request.user)
-#         wishlist_item.delete()
-#     except Cart.DoesNotExist:
-#         pass
-    
-#     return redirect('wishlist')
+
 
 def remove_from_wishlist(request, wishlist_item_id):
     try:
